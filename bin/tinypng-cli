@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+use Palmtree\TinyPng;
+
+require_once dirname( __DIR__ ) . '/vendor/autoload.php';
+
+if ( TinyPng::isCli() ) {
+	$options = TinyPng::getCliOptions();
+
+	if ( empty( $options ) ) {
+		echo TinyPng::getCliUsage();
+		exit;
+	}
+
+	$tinyPng = new TinyPng( TinyPng::getCliOptions() );
+	$tinyPng->shrink();
+}

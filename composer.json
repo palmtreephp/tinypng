@@ -1,0 +1,22 @@
+{
+  "name": "palmtree/tinypng",
+  "description": "TinyPng component for Palmtree PHP",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "andyexeter",
+      "email": "palmer.andy@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Palmtree\\TinyPng\\": ""
+    }
+  },
+  "bin": [
+    "bin/tinypng-cli"
+  ]
+}
+
+
