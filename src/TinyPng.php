@@ -1,6 +1,6 @@
 <?php
 
-namespace Palmtree;
+namespace Palmtree\TinyPng;
 
 /**
  * TinyPNG API Bridge for PHP
@@ -11,7 +11,6 @@ namespace Palmtree;
  */
 class TinyPng
 {
-
     /** Minimum HTTP OK response code. */
     const HTTP_OK_MIN = 200;
 
@@ -23,38 +22,40 @@ class TinyPng
      *
      * @type string      $api_key      API key obtained from https://tinypng.com/developers
      * @type string|bool $backup_path  Path to store backups of original images. Set to false to disable backups.
-     * @type callable    $callback     Optional callback function to be called for every file iteration of the shrink() method.
+     * @type callable    $callback     Optional callback function to be called for every iteration of shrink().
      * @type string      $date_format  Date format for log files.
      * @type array       $extensions   Valid file extensions to search for in 'path'.
-     * @type string|bool $fail_log     File to write all failed compressions to, relative to 'path' option. Set to false to disable.
+     * @type string|bool $fail_log     File to write all failed compressions to, relative to 'path' option.
+     *                                 Set to false to disable.
      * @type array       $files        Pre-selected array of files to compress. Overrides the 'path' option.
      * @type string|bool $log          File to write all log messages to, relative to 'path' option. Set to false to disable.
      * @type int         $max_failures Maximum number of failed compressions to allow before giving up.
      * @type string      $path         Path in which to search for files. Ignored if 'files' option is not empty.
-     * @type boolean     $quiet        Set to true to disable echo-ing of log messages. Defaults to false in a CLI environment.
+     * @type boolean     $quiet        Set to true to disable echo-ing of log messages.
+     *                                 Defaults to false in a CLI environment.
      */
-    public static $defaults = array(
+    public static $defaults = [
         'api_key'      => '',
         'backup_path'  => false,
         'callback'     => null,
         'date_format'  => 'Y-m-d H:i:s',
-        'extensions'   => array('jpg', 'jpeg', 'png', 'gif'),
+        'extensions'   => ['jpg', 'jpeg', 'png', 'gif'],
         'fail_log'     => 'TinyPng-failed.%d.log',
-        'files'        => array(),
+        'files'        => [],
         'log'          => 'TinyPng.%d.log',
         'max_failures' => 2,
         'path'         => '.',
         'quiet'        => true,
-    );
+    ];
 
     /**
      * @var array $cliDefaults Array of defaults for CLI usage.
      */
-    public static $cliDefaults = array(
+    public static $cliDefaults = [
         'fail_log' => false,
         'log'      => false,
         'quiet'    => false,
-    );
+    ];
 
     /**
      * @var string $endpoint API Endpoint.
@@ -70,23 +71,23 @@ class TinyPng
     protected $curlHandle;
 
     /** @var array Array of curlopts to be used in curl_setopt_array. */
-    public $curlOpts = array(
+    public $curlOpts = [
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_BINARYTRANSFER => true,
-    );
+    ];
 
     /** @var array Array of compression results. */
-    public $results = array();
+    public $results = [];
 
     /** @var array Array of logged messages. */
-    public $messages = array();
+    public $messages = [];
 
     /** @var array Array of files that failed compression. */
-    public $failed = array();
+    public $failed = [];
 
     /** @var array Array of settings to be used per object. */
-    protected $settings = array();
+    protected $settings = [];
 
     /** @var bool Whether compression is complete. */
     protected $complete = false;
@@ -102,7 +103,7 @@ class TinyPng
      *
      * @param array $options Array of options to be merged with self::$defaults.
      */
-    public function __construct($options = array())
+    public function __construct($options = [])
     {
         $defaults = self::$defaults;
 
@@ -121,7 +122,9 @@ class TinyPng
         $this->settings['path'] = $this->normalizePath($this->settings['path']);
 
         if ($this->settings['backup_path'] !== false) {
-            $this->settings['backup_path'] = $this->addTrailingSlash($this->normalizePath(dirname($this->settings['backup_path'])) . basename($this->settings['backup_path']));
+            $this->settings['backup_path'] = $this->addTrailingSlash(
+                $this->normalizePath(dirname($this->settings['backup_path'])) . basename($this->settings['backup_path'])
+            );
 
             if (!is_dir($this->settings['backup_path'])) {
                 mkdir($this->settings['backup_path']);
@@ -180,13 +183,13 @@ class TinyPng
 
             $this->results[$inputFile] = $savings;
 
-            $this->log('SUCCESS: Reduced file size from %s to %s (%s saving)', array(
+            $this->log('SUCCESS: Reduced file size from %s to %s (%s saving)', [
                 $savings['was'],
                 $savings['now'],
                 $savings['saved_percent'],
-            ));
+            ]);
             if ($this->isCallbackCallable) {
-                call_user_func_array($this->settings['callback'], array($inputFile));
+                call_user_func_array($this->settings['callback'], [$inputFile]);
             }
         }
 
@@ -283,7 +286,7 @@ class TinyPng
         $this->failed[$this->currentFile] = $message;
 
         if ($this->isCallbackCallable) {
-            call_user_func_array($this->settings['callback'], array($this->currentFile));
+            call_user_func_array($this->settings['callback'], [$this->currentFile]);
         }
     }
 
@@ -310,7 +313,12 @@ class TinyPng
     protected function preShrink()
     {
         if ($this->complete) {
-            $this->log('Compression already completed. Create a new instance of the class to compress a different directory.');
+            $this->log(
+                '
+                Compression already completed. 
+                Create a new instance of the class to compress a different directory.
+                '
+            );
 
             return false;
         }
@@ -336,7 +344,7 @@ class TinyPng
         if (count($this->failed) >= $this->settings['max_failures']) {
             $this->log('Maximum number of failures reached. Giving up compressing.');
             if ($this->isCallbackCallable) {
-                call_user_func_array($this->settings['callback'], array($this->currentFile));
+                call_user_func_array($this->settings['callback'], [$this->currentFile]);
             }
 
             return true;
@@ -355,13 +363,21 @@ class TinyPng
             return $this->settings['files'];
         }
 
-        $extensions = array_merge($this->settings['extensions'], array_map('strtoupper', $this->settings['extensions']));
+        $extensions = array_merge(
+            $this->settings['extensions'],
+            array_map('strtoupper',
+                $this->settings['extensions'])
+        );
 
         $files = glob($this->settings['path'] . '*.{' . implode(',', $extensions) . '}', GLOB_BRACE);
 
         if (!$files) {
-            $this->log('No files found matching the pattern: ' . $this->settings['path'] . '*.{' . implode(',', $extensions) . '}');
-            $files = array();
+            $this->log(sprintf(
+                'No files found matching the pattern: %s',
+                $this->settings['path'] . '*.{' . implode(',', $extensions) . '}'
+            ));
+
+            $files = [];
         }
 
         return $files;
@@ -455,12 +471,12 @@ class TinyPng
         $savedTotal   = $response->input->size - $response->output->size;
         $savedPercent = $savedTotal / $response->input->size * 100;
 
-        return array(
+        return [
             'was'           => $this->sizeFormat($response->input->size),
             'now'           => $this->sizeFormat($response->output->size),
             'saved_total'   => $this->sizeFormat($savedTotal),
             'saved_percent' => floor($savedPercent) . '%',
-        );
+        ];
     }
 
     /**
@@ -493,7 +509,7 @@ class TinyPng
      * @param string $message Message to log
      * @param array  $args    Array of args to be used in vsprintf for $message.
      */
-    protected function log($message, $args = array())
+    protected function log($message, $args = [])
     {
         if (!empty($args)) {
             $message = vsprintf($message, $args);
@@ -584,14 +600,14 @@ class TinyPng
      */
     protected function sizeFormat($bytes)
     {
-        $quant = array(
+        $quant = [
             // ========================= Origin ====
             'TB' => 1099511627776, // pow( 1024, 4)
             'GB' => 1073741824, // pow( 1024, 3)
             'MB' => 1048576, // pow( 1024, 2)
             'kB' => 1024, // pow( 1024, 1)
             'B'  => 1, // pow( 1024, 0)
-        );
+        ];
 
         foreach ($quant as $unit => $mag) {
             if (doubleval($bytes) >= $mag) {
@@ -613,7 +629,7 @@ class TinyPng
     {
         $handle = curl_init();
 
-        curl_setopt_array($handle, array(
+        curl_setopt_array($handle, [
             CURLOPT_URL            => $url,
             CURLOPT_TIMEOUT        => 30,
             CURLOPT_RETURNTRANSFER => true,
@@ -622,7 +638,7 @@ class TinyPng
             CURLOPT_HEADER         => false,
             CURLOPT_AUTOREFERER    => true,
             CURLOPT_USERAGENT      => $this->userAgent,
-        ));
+        ]);
 
         $result   = curl_exec($handle);
         $httpCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
@@ -666,7 +682,6 @@ USAGE:
 USAGE;
 
         return $usage;
-
     }
 
     /**
@@ -676,7 +691,7 @@ USAGE;
      */
     public static function getCliOptions()
     {
-        $optionMap = array();
+        $optionMap = [];
 
         foreach (self::$defaults as $key => $value) {
             $chr         = substr($key, 0, 1);
@@ -694,7 +709,7 @@ USAGE;
 
         $opts = getopt(implode('', array_keys($optionMap)), $optionMap);
 
-        $options = array();
+        $options = [];
 
         foreach ($opts as $key => $value) {
             $mapKey = current(preg_grep('/^' . $key . '\:{1,2}/', array_keys($optionMap)));
