@@ -1,7 +1,7 @@
 # Palmtree TinyPNG API
 
 
-##### WARNING: This library is no longer maintained. Use the [official library](https://tinypng.com/developers/reference/php) instead.
+#### WARNING: This library is no longer maintained. Use the [official library](https://tinypng.com/developers/reference/php) instead.
 
 A [TinyPNG](https://tinypng.com/) API implementation for PHP.
 
